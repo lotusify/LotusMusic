@@ -1,139 +1,114 @@
 const client = require("../../client");
-const { ActionRowBuilder, ButtonBuilder, ButtonStyle } = require("discord.js");
+const {
+    createEmbed,
+    createButtons,
+    handlePause,
+    handleSkip,
+    handlePrev,
+    handleStop,
+    handleShuffle,
+    handleLoop,
+    handleReplay,
+    handleQueue,
+    handleClear,
+    handleVolumeChange,
+    handleToggleAutoplay,
+    handleToggle247,
+    handleFilter,
+    handleLyrics
+} = require('../../lotusify');
 
 client.on('interactionCreate', async (interaction) => {
     if (!interaction.isButton()) return;
 
     const player = client.riffy.players.get(interaction.guild.id);
+    if (!player) {
+        return interaction.reply({ content: `❌ No active player.`, ephemeral: true });
+    }
 
-    if (interaction.customId === 'pause') {
-        await interaction.deferUpdate();
+    const track = player.current;
+    const requesterId = interaction.user.id;
 
-        if (!player) return interaction.followUp({ content: `The player doesn't exist`, ephemeral: true });
+    try {
+        switch (interaction.customId) {
+            case 'pause':
+            case 'play':
+                await handlePause(client, interaction, player, track, requesterId);
+                // Update message with new button state
+                await interaction.message.edit({
+                    embeds: [createEmbed(client, player, track)],
+                    components: createButtons(client, player, track)
+                });
+                break;
 
-        player.pause(true);
+            case 'skip':
+                await handleSkip(client, interaction, player, track);
+                break;
 
-        const row = new ActionRowBuilder()
-            .addComponents(
-                new ButtonBuilder()
-                    .setCustomId('disconnect')
-                    .setStyle(ButtonStyle.Secondary)
-                    .setEmoji('⏺'),
+            case 'prev':
+                await handlePrev(interaction, player);
+                break;
 
-                new ButtonBuilder()
-                    .setCustomId('play')
-                    .setStyle(ButtonStyle.Secondary)
-                    .setEmoji('▶'),
+            case 'disconnect':
+                await handleStop(client, interaction, player);
+                break;
 
-                new ButtonBuilder()
-                    .setCustomId('skip')
-                    .setStyle(ButtonStyle.Secondary)
-                    .setEmoji('⏭')
-            );
+            case 'shuffle':
+                await handleShuffle(client, interaction, player, track);
+                await interaction.message.edit({
+                    embeds: [createEmbed(client, player, track)],
+                    components: createButtons(client, player, track)
+                });
+                break;
 
-        return await interaction.message.edit({
-            components: [row]
-        })
-    } else if (interaction.customId === 'play') {
-        await interaction.deferUpdate();
+            case 'loop':
+                await handleLoop(client, interaction, player, track, requesterId);
+                await interaction.message.edit({
+                    embeds: [createEmbed(client, player, track)],
+                    components: createButtons(client, player, track)
+                });
+                break;
 
-        if (!player) return interaction.followUp({ content: `The player doesn't exist`, ephemeral: true });
+            case 'replay':
+                await handleReplay(client, player, track, requesterId, interaction);
+                break;
 
-        player.pause(false);
+            case 'queue':
+                await handleQueue(client, interaction, player);
+                break;
 
-        const row = new ActionRowBuilder()
-            .addComponents(
-                new ButtonBuilder()
-                    .setCustomId('disconnect')
-                    .setStyle(ButtonStyle.Secondary)
-                    .setEmoji('⏺'),
+            case 'clear':
+                await handleClear(client, interaction, player);
+                break;
 
-                new ButtonBuilder()
-                    .setCustomId('pause')
-                    .setStyle(ButtonStyle.Secondary)
-                    .setEmoji('⏸'),
+            case 'toggle_autoplay':
+                await handleToggleAutoplay(client, interaction, player, track, requesterId);
+                await interaction.message.edit({
+                    embeds: [createEmbed(client, player, track)],
+                    components: createButtons(client, player, track)
+                });
+                break;
 
-                new ButtonBuilder()
-                    .setCustomId('skip')
-                    .setStyle(ButtonStyle.Secondary)
-                    .setEmoji('⏭')
-            )
+            case 'toggle_247':
+                await handleToggle247(client, interaction, player, track, requesterId);
+                break;
 
-        return await interaction.message.edit({
-            components: [row]
-        })
+            case 'filter':
+                await handleFilter(client, interaction, player);
+                break;
 
-    } else if (interaction.customId === 'skip') {
-        await interaction.deferUpdate();
+            case 'lyrics':
+                await handleLyrics(client, interaction, player, track);
+                break;
 
-        if (!player) return interaction.followUp({ content: `The player doesn't exist`, ephemeral: true });
-        player.stop();
-
-        const rowDisabled = new ActionRowBuilder()
-            .addComponents(
-                new ButtonBuilder()
-                    .setCustomId('disconnect')
-                    .setStyle(ButtonStyle.Secondary)
-                    .setEmoji('⏺')
-                    .setDisabled(true),
-
-                new ButtonBuilder()
-                    .setCustomId('pause')
-                    .setStyle(ButtonStyle.Secondary)
-                    .setEmoji('⏸')
-                    .setDisabled(true),
-
-                new ButtonBuilder()
-                    .setCustomId('skip')
-                    .setStyle(ButtonStyle.Secondary)
-                    .setEmoji('⏭')
-                    .setDisabled(true),
-
-                new ButtonBuilder()
-                    .setCustomId('skiped')
-                    .setStyle(ButtonStyle.Success)
-                    .setLabel('Skipped')
-                    .setDisabled(true)
-            );
-
-        return await interaction.message.edit({
-            components: [rowDisabled]
-        })
-    } else if (interaction.customId === 'disconnect') {
-        await interaction.deferUpdate();
-
-        if (!player) return interaction.followUp({ content: `The player doesn't exist`, ephemeral: true });
-        player.destroy();
-
-        const row = new ActionRowBuilder()
-            .addComponents(
-                new ButtonBuilder()
-                    .setCustomId('disconnect')
-                    .setStyle(ButtonStyle.Secondary)
-                    .setEmoji('⏺')
-                    .setDisabled(true),
-
-                new ButtonBuilder()
-                    .setCustomId('play')
-                    .setStyle(ButtonStyle.Secondary)
-                    .setEmoji('▶')
-                    .setDisabled(true),
-
-                new ButtonBuilder()
-                    .setCustomId('skip')
-                    .setStyle(ButtonStyle.Secondary)
-                    .setEmoji('⏭')
-                    .setDisabled(true),
-
-                new ButtonBuilder()
-                    .setCustomId('skiped')
-                    .setStyle(ButtonStyle.Danger)
-                    .setLabel('Disconnected')
-                    .setDisabled(true)
-            )
-
-        return await interaction.message.edit({
-            components: [row]
-        })
+            default:
+                // Ignore unknown button IDs
+                break;
+        }
+    } catch (error) {
+        console.error(`[Button Handler] Error handling ${interaction.customId}:`, error);
+        if (!interaction.replied && !interaction.deferred) {
+            await interaction.reply({ content: '❌ An error occurred.', ephemeral: true });
+        }
     }
 });

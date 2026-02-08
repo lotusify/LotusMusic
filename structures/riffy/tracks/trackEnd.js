@@ -1,7 +1,7 @@
-const client = require("../../client")
+const client = require("../../client");
+const { clearUpdateScheduler } = require('../../lotusify/updater');
 
-client.riffy.on('trackEnd', async (player) => {
-    if (!player) return;
-
-    if (player.message) await player.message.delete();
-})
+client.riffy.on('trackEnd', async (player, track) => {
+    // Clear update scheduler when track ends
+    clearUpdateScheduler(player);
+});
