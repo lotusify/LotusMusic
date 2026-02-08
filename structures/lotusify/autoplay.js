@@ -73,9 +73,10 @@ function resetCache(guildId, client = null) {
     if (client && client.riffy) {
         const player = client.riffy.players.get(guildId);
         if (player && player.queue) {
-            // Remove all autoplay tracks from queue (tracks where requester is client.user)
+            // Remove all autoplay tracks from queue (tracks with isAutoplay flag)
+            // This works for both Layer 1 (YTMusic) and Layer 2 (Riffy) autoplay
             const originalLength = player.queue.length;
-            player.queue = player.queue.filter(track => track.info?.requester?.id !== client.user.id);
+            player.queue = player.queue.filter(track => !track.isAutoplay);
             const removed = originalLength - player.queue.length;
             
             if (removed > 0) {

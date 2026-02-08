@@ -1,4 +1,5 @@
 const { Client, CommandInteraction, ApplicationCommandOptionType } = require('discord.js');
+const { resetCache } = require('../../lotusify/autoplay');
 
 module.exports = {
     name: 'play',
@@ -30,6 +31,10 @@ module.exports = {
             deaf: true,
         })
 
+        // Reset autoplay cache and clear autoplay tracks from queue
+        // This ensures the new manually-played track becomes the new anchor/seed
+        resetCache(interaction.guild.id, client);
+
         const resolve = await client.riffy.resolve({ query: query, requester: interaction.member });
         const { loadType, tracks, playlistInfo } = resolve;
 
@@ -46,6 +51,19 @@ module.exports = {
         } else if (loadType === 'search' || loadType === 'track') {
             const track = tracks.shift();
             track.info.requester = interaction.member;
+            
+            // Preserve YTMusic metadata if source is ytmsearch
+            // Lavalink/NodeLink may overwrite with YouTube's "Artist - Topic" format
+            if (track.info?.sourceName === 'ytmusic') {
+                // Cache original YTMusic metadata
+                const ytmusicMetadata = {
+                    title: track.info.title,
+                    author: track.info.author
+                };
+                
+                // Store in track for later restoration in trackStart
+                track.ytmusicMetadata = ytmusicMetadata;
+            }
 
             player.queue.add(track);
 

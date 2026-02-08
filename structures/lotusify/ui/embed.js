@@ -86,7 +86,7 @@ function createEmbed(client, player, track) {
         .addFields(
             { name: 'Artist', value: author, inline: true },
             { name: 'Duration', value: `\`${totalTime}\``, inline: true },
-            { name: 'Requested by', value: requesterText, inline: true }
+            { name: 'Added by', value: requesterText, inline: true }
         );
     
     return embed;
