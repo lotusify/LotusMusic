@@ -2,7 +2,7 @@ const { ActivityType } = require("discord.js");
 const client = require("../../client");
 const { logger } = require("../../functions/logger");
 
-client.on("ready", async () => {
+client.on("clientReady", async () => {
     client.riffy.init(client.user.id);
 
     console.log("\n---------------------")
@@ -12,7 +12,7 @@ client.on("ready", async () => {
     client.user.setPresence({
         activities: [
             {
-                name: "You",
+                name: "🎵 LotusMusic | /play",
                 type: ActivityType.Watching
             }
         ],
